@@ -1,5 +1,7 @@
 package jp.ne.yonem;
 
+import jp.ne.yonem.util.ExcelUtil;
+
 import javax.swing.*;
 
 public class FileTree {
@@ -22,6 +24,7 @@ public class FileTree {
                 return;
             }
             System.out.printf("選択ディレクトリ：%s%n", chooser.getSelectedFile().getAbsolutePath());
+            ExcelUtil.convertDir2Tree(chooser.getSelectedFile());
 
             JOptionPane.showMessageDialog(
                     null,
