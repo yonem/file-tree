@@ -9,13 +9,29 @@ import javax.swing.*;
  */
 public class FileTree {
 
+    /**
+     * 正常終了時のタイトル
+     */
     private static final String SUCCESS_TITLE = "正常終了";
+
+    /**
+     * 正常終了時のメッセージ
+     */
     private static final String SUCCESS_MESSAGE = "ファイルを出力しました";
+
+    /**
+     * 異常終了時のタイトル
+     */
     private static final String FAILURE_TITLE = "異常終了";
+
+    /**
+     * 異常終了時のメッセージ
+     */
     private static final String FAILURE_MESSAGE = "ファイルの出力に失敗しました";
 
     /**
      * メインメソッド
+     *
      * @param args プログラム引数
      */
     public static void main(String[] args) {
@@ -26,10 +42,7 @@ public class FileTree {
             chooser.setMultiSelectionEnabled(false);
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             var selected = chooser.showOpenDialog(null);
-
-            if (selected != JFileChooser.APPROVE_OPTION) {
-                return;
-            }
+            if (selected != JFileChooser.APPROVE_OPTION) return;
             System.out.printf("選択ディレクトリ：%s%n", chooser.getSelectedFile().getAbsolutePath());
             ExcelUtil.convertDir2Tree(chooser.getSelectedFile());
 
