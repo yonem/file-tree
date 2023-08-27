@@ -4,6 +4,9 @@ import jp.ne.yonem.util.ExcelUtil;
 
 import javax.swing.*;
 
+/**
+ * メインクラス
+ */
 public class FileTree {
 
     private static final String SUCCESS_TITLE = "正常終了";
@@ -11,6 +14,10 @@ public class FileTree {
     private static final String FAILURE_TITLE = "異常終了";
     private static final String FAILURE_MESSAGE = "ファイルの出力に失敗しました";
 
+    /**
+     * メインメソッド
+     * @param args プログラム引数
+     */
     public static void main(String[] args) {
 
         try {
