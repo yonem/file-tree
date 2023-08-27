@@ -135,7 +135,12 @@ public class ExcelUtil {
                     if (rec.rows() == rec.endRow()) row.createCell(i).setCellStyle(fileTopBottomStyle); // ディレクトリが最終行
                 }
                 row.createCell(maxIndent).setCellStyle(dirTopRightStyle);
-                if (rec.rows() == rec.endRow()) row.createCell(maxIndent).setCellStyle(fileRightStyle); // ディレクトリが最終行
+
+                // ディレクトリが最終行
+                if (rec.rows() == rec.endRow()) {
+                    row.createCell(maxIndent).setCellStyle(fileRightStyle);
+                    continue;
+                }
 
                 // 行方向への罫線を描画していく
                 for (var i = rec.rows() + 1; i < rec.endRow(); i++) {
@@ -143,7 +148,6 @@ public class ExcelUtil {
                     if (Objects.isNull(currRow)) currRow = ws.createRow(i);
                     currRow.createCell(rec.cols()).setCellStyle(dirLeftStyle);
                 }
-                if (rec.rows() == rec.endRow()) continue;
                 var currRow = ws.getRow(rec.endRow());
                 if (Objects.isNull(currRow)) currRow = ws.createRow(rec.endRow());
                 currRow.createCell(rec.cols()).setCellStyle(dirLeftBottomStyle);
