@@ -3,7 +3,7 @@ package jp.ne.yonem.util;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -59,8 +59,7 @@ public class ExcelUtil {
         var t = Calendar.getInstance().getTime();
         var name = String.format(EXCEL_BOOK_NAME, t, t, t);
 
-        try (var out = new FileOutputStream(new File(dir.getPath(), name)); var wb = WorkbookFactory.create(true)) {
-
+        try (var out = new FileOutputStream(new File(dir.getPath(), name)); var wb = new XSSFWorkbook()) {
             var ws = wb.createSheet(EXCEL_SHEET_NAME);
             var recordList = new ArrayList<FileTreeDTO>();
             var ci = convert(dir, ROW_START_INDEX, COL_START_INDEX, name, recordList);
