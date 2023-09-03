@@ -4,6 +4,8 @@ import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -16,6 +18,8 @@ import java.util.Objects;
  * Excel処理クラス
  */
 public class ExcelUtil {
+
+    private static final Logger logger = LoggerFactory.getLogger(ExcelUtil.class);
 
     /**
      * 処理ファイルと座標の情報を格納するレコード
@@ -67,7 +71,7 @@ public class ExcelUtil {
             wb.write(out);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(logger.toString(), e);
             throw e;
         }
     }

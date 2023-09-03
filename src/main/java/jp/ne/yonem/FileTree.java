@@ -1,6 +1,8 @@
 package jp.ne.yonem;
 
 import jp.ne.yonem.util.ExcelUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 
@@ -8,6 +10,8 @@ import javax.swing.*;
  * メインクラス
  */
 public class FileTree {
+
+    private static Logger logger = LoggerFactory.getLogger(FileTree.class);
 
     /**
      * 正常終了時のタイトル
@@ -43,7 +47,7 @@ public class FileTree {
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             var selected = chooser.showOpenDialog(null);
             if (selected != JFileChooser.APPROVE_OPTION) return;
-            System.out.printf("選択ディレクトリ：%s%n", chooser.getSelectedFile().getAbsolutePath());
+            logger.debug(chooser.getSelectedFile().getAbsolutePath());
             ExcelUtil.convertDir2Tree(chooser.getSelectedFile());
 
             JOptionPane.showMessageDialog(
