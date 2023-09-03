@@ -11,7 +11,7 @@ import javax.swing.*;
  */
 public class FileTree {
 
-    private static Logger logger = LoggerFactory.getLogger(FileTree.class);
+    private static final Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
     /**
      * 正常終了時のタイトル
@@ -47,23 +47,16 @@ public class FileTree {
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             var selected = chooser.showOpenDialog(null);
             if (selected != JFileChooser.APPROVE_OPTION) return;
+            logger.trace(chooser.getSelectedFile().getAbsolutePath());
             logger.debug(chooser.getSelectedFile().getAbsolutePath());
+            logger.info(chooser.getSelectedFile().getAbsolutePath());
+            logger.warn(chooser.getSelectedFile().getAbsolutePath());
+            logger.error(chooser.getSelectedFile().getAbsolutePath());
             ExcelUtil.convertDir2Tree(chooser.getSelectedFile());
-
-            JOptionPane.showMessageDialog(
-                    null,
-                    SUCCESS_MESSAGE,
-                    SUCCESS_TITLE,
-                    JOptionPane.INFORMATION_MESSAGE
-            );
+            JOptionPane.showMessageDialog(null, SUCCESS_MESSAGE, SUCCESS_TITLE, JOptionPane.INFORMATION_MESSAGE);
 
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(
-                    null,
-                    FAILURE_MESSAGE,
-                    FAILURE_TITLE,
-                    JOptionPane.ERROR_MESSAGE
-            );
+            JOptionPane.showMessageDialog(null, FAILURE_MESSAGE, FAILURE_TITLE, JOptionPane.ERROR_MESSAGE);
         }
     }
 }

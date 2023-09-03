@@ -19,7 +19,7 @@ import java.util.Objects;
  */
 public class ExcelUtil {
 
-    private static final Logger logger = LoggerFactory.getLogger(ExcelUtil.class);
+    private static final Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
     /**
      * 処理ファイルと座標の情報を格納するレコード
@@ -71,7 +71,7 @@ public class ExcelUtil {
             wb.write(out);
 
         } catch (Exception e) {
-            logger.error(logger.toString(), e);
+            logger.error(ExcelUtil.class.getName(), e);
             throw e;
         }
     }
