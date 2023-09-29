@@ -1,9 +1,9 @@
 ## 動作環境
 
-- Java17で動作
+- Java21で動作
 
-2023/8/20現在  
-https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html
+2023/9/29現在  
+https://www.oracle.com/java/technologies/downloads/#java21
 
 ## 操作方法
 
