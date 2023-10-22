@@ -5,15 +5,18 @@
 2023/9/29現在  
 https://www.oracle.com/java/technologies/downloads/#java21
 
-- JUnit5でテスト
+### 使用ライブラリ
+
+- Apache POI
+
+Excel2007形式（ooxml）でExcel関連の処理を行う。
 
 ```xml
 
 <dependency>
-    <groupId>org.junit.jupiter</groupId>
-    <artifactId>junit-jupiter-api</artifactId>
-    <version>5.9.3</version>
-    <scope>test</scope>
+    <groupId>org.apache.poi</groupId>
+    <artifactId>poi-ooxml</artifactId>
+    <version>5.2.3</version>
 </dependency>
 ```
 
