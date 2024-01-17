@@ -9,10 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Excel処理クラス
@@ -192,9 +189,10 @@ public class ExcelUtil {
             return ci;
         }
         var lists = file.listFiles();
+        Arrays.sort(Objects.requireNonNull(lists), Comparator.comparing(File::isDirectory).reversed().thenComparing(File::getName));
 
         // 処理対象がファイルの場合
-        if (file.isFile() || Objects.isNull(lists)) {
+        if (file.isFile()) {
             recordList.add(new FileTreeDTO(cnt, indent, cnt, indent, file));
             return ci;
         }
