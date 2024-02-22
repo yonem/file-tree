@@ -77,7 +77,7 @@ public class FileTreeFrame extends JFrame {
     /**
      * Excel出力モードチェックボックス
      */
-    private final JCheckBox chkHeadless = new JCheckBox("Excel", false);
+    private final JCheckBox chkExcel = new JCheckBox("Excel", false);
 
     /**
      * 選択中フォルダ
@@ -107,7 +107,7 @@ public class FileTreeFrame extends JFrame {
             var northPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
             northPanel.add(lblFile);
             northPanel.add(txtRootDirectory);
-            northPanel.add(chkHeadless);
+            northPanel.add(chkExcel);
             panel.add(northPanel, BorderLayout.NORTH);
 
             // CENTER
@@ -145,7 +145,7 @@ public class FileTreeFrame extends JFrame {
                         btnSubmit.setEnabled(false);
                         var rootDirectory = new File(path);
 
-                        if (chkHeadless.isSelected()) {
+                        if (chkExcel.isSelected()) {
                             taConsole.setText("Start!!\n");
                             convertDir2Tree(rootDirectory);
                             JOptionPane.showMessageDialog(null, SUCCESS_MESSAGE, SUCCESS_TITLE, JOptionPane.INFORMATION_MESSAGE);
