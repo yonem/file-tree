@@ -45,6 +45,10 @@ public class ExcelUtil {
    * @throws Exception 例外発生時
    */
   public static void convertDir2Tree(File dir) throws Exception {
+    Optional.ofNullable(dir)
+        .filter(file -> file.exists() || file.isDirectory())
+        .orElseThrow(() -> new IllegalArgumentException("有効なディレクトリを指定してください。"));
+
     var t = Calendar.getInstance().getTime();
     var name = String.format(EXCEL_BOOK_NAME, t, t, t);
 
@@ -179,16 +183,21 @@ public class ExcelUtil {
       ci[0] = cnt - 1;
       return ci;
     }
-    var lists = file.listFiles();
-    Arrays.sort(
-        Objects.requireNonNull(lists),
-        Comparator.comparing(File::isDirectory).reversed().thenComparing(File::getName));
 
     // 処理対象がファイルの場合
     if (file.isFile()) {
       recordList.add(new FileTreeDTO(cnt, indent, cnt, indent, file));
       return ci;
     }
+
+    var lists = file.listFiles();
+    if (Objects.isNull(lists)) {
+      recordList.add(new FileTreeDTO(cnt, indent, cnt, indent, file));
+      return ci;
+    }
+
+    Arrays.sort(
+        lists, Comparator.comparing(File::isDirectory).reversed().thenComparing(File::getName));
 
     // 配下のファイル群を再帰呼び出しする
     for (var tar : lists) {
