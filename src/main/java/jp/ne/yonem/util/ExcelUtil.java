@@ -3,10 +3,10 @@ package jp.ne.yonem.util;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.*;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +52,8 @@ public class ExcelUtil {
     var t = Calendar.getInstance().getTime();
     var name = String.format(EXCEL_BOOK_NAME, t, t, t);
 
-    try (var out = new FileOutputStream(new File(dir.getPath(), name));
-        var wb = new HSSFWorkbook()) {
+    try (var out = new FileOutputStream(new File(dir, name));
+        var wb = new XSSFWorkbook()) {
       var ws = wb.createSheet(EXCEL_SHEET_NAME);
       var recordList = new ArrayList<FileTreeDTO>();
       var ci = convert(dir, ROW_START_INDEX, COL_START_INDEX, name, recordList);
@@ -61,7 +61,7 @@ public class ExcelUtil {
       wb.write(out);
 
     } catch (Exception e) {
-      logger.error(ExcelUtil.class.getName(), e);
+      logger.error("Excel出力中にエラーが発生しました", e);
       throw e;
     }
   }
