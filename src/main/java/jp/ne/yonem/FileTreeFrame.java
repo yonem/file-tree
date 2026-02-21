@@ -56,6 +56,9 @@ public class FileTreeFrame extends JFrame {
   /** Excel出力モードチェックボックス */
   private final JCheckBox chkExcel = new JCheckBox("Excel", false);
 
+  /** ディレクトリのみ出力チェックボックス */
+  private final JCheckBox chkDirectoryOnly = new JCheckBox("ディレクトリのみ", false);
+
   /** 選択中フォルダ */
   private final JTextField txtRootDirectory = new SelectedFileTextField();
 
@@ -80,6 +83,7 @@ public class FileTreeFrame extends JFrame {
       northPanel.add(lblFile);
       northPanel.add(txtRootDirectory);
       northPanel.add(chkExcel);
+      northPanel.add(chkDirectoryOnly);
       panel.add(northPanel, BorderLayout.NORTH);
 
       // CENTER
@@ -144,7 +148,17 @@ public class FileTreeFrame extends JFrame {
     }
   }
 
+  /**
+   * コンソールにディレクトリ構造を出力する
+   *
+   * @param file 対象ファイルまたはディレクトリ
+   * @param indent インデント深さ
+   * @param hierarchy 階層文字列
+   * @param isEOL 最終行フラグ
+   */
   private void outputConsole(File file, int indent, String hierarchy, boolean isEOL) {
+
+    if (chkDirectoryOnly.isSelected() && file.isFile()) return;
 
     if (0 == indent) {
       taConsole.setText(null);
@@ -161,15 +175,20 @@ public class FileTreeFrame extends JFrame {
     if (file.isFile()) return;
 
     var lists = file.listFiles();
-    Arrays.sort(
-        Objects.requireNonNull(lists),
-        Comparator.comparing(File::isDirectory).reversed().thenComparing(File::getName));
+    if (Objects.isNull(lists)) return;
 
-    for (var i = 0; i < lists.length; i++) {
-      var next = lists[i];
-      if (i == 0 && 0 < indent) hierarchy += isEOL ? "   " : "│  ";
-      var isLast = i == lists.length - 1;
-      outputConsole(next, indent + 1, hierarchy, isLast);
+    var filteredLists =
+        Arrays.stream(lists)
+            .filter(f -> !chkDirectoryOnly.isSelected() || f.isDirectory())
+            .sorted(Comparator.comparing(File::isDirectory).reversed().thenComparing(File::getName))
+            .toArray(File[]::new);
+
+    for (var i = 0; i < filteredLists.length; i++) {
+      var next = filteredLists[i];
+      var currentHierarchy = hierarchy;
+      if (i == 0 && 0 < indent) currentHierarchy += isEOL ? "   " : "│  ";
+      var isLast = i == filteredLists.length - 1;
+      outputConsole(next, indent + 1, currentHierarchy, isLast);
     }
   }
 }
