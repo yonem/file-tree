@@ -122,7 +122,7 @@ public class FileTreeFrame extends JFrame {
 
             if (chkExcel.isSelected()) {
               taConsole.setText("Start!!\n");
-              convertDir2Tree(rootDirectory);
+              convertDir2Tree(rootDirectory, chkDirectoryOnly.isSelected());
               JOptionPane.showMessageDialog(
                   null, SUCCESS_MESSAGE, SUCCESS_TITLE, JOptionPane.INFORMATION_MESSAGE);
               taConsole.append(SUCCESS_MESSAGE);

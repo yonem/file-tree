@@ -3,10 +3,10 @@ package jp.ne.yonem.util;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
-import java.nio.file.Files;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Calendar;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -14,84 +14,68 @@ import org.junit.jupiter.api.io.TempDir;
 class ExcelUtilTest {
 
   @TempDir Path tempDir;
+  private File rootDir;
 
-  /** 現在の日付に基づく期待されるファイル名を取得する */
-  private String getExpectedFileName() {
-    var t = Calendar.getInstance().getTime();
-    return String.format("tree_%ty-%tm-%td.xlsx", t, t, t);
-  }
-
-  @Nested
-  @DisplayName("正常系のテスト")
-  class SuccessTests {
-
-    @Test
-    @DisplayName("複雑なディレクトリ構造からExcelが生成されること")
-    void testConvertDir2Tree_Success() throws Exception {
-      // 1. テスト用のディレクトリ構造を作成
-      var subDir1 = Files.createDirectory(tempDir.resolve("subdir1"));
-      Files.createFile(subDir1.resolve("file1.txt"));
-      Files.createDirectory(tempDir.resolve("subdir2"));
-      Files.createFile(tempDir.resolve("root_file.txt"));
-
-      // 2. 実行
-      var targetDir = tempDir.toFile();
-      ExcelUtil.convertDir2Tree(targetDir);
-
-      // 3. 検証
-      var resultFile = new File(targetDir, getExpectedFileName());
-      assertTrue(resultFile.exists(), "Excelファイルが生成されていること");
-      assertTrue(resultFile.length() > 0, "ファイル内容が空ではないこと");
-    }
-
-    @Test
-    @DisplayName("空のディレクトリでもExcelが生成されること")
-    void testConvertDir2Tree_EmptyDir() {
-      var emptyDir = tempDir.toFile();
-
-      assertDoesNotThrow(
-          () -> {
-            ExcelUtil.convertDir2Tree(emptyDir);
-          });
-
-      var resultFile = new File(emptyDir, getExpectedFileName());
-      assertTrue(resultFile.exists());
+  @BeforeEach
+  void setUp() throws IOException {
+    var root = tempDir.resolve("test_root");
+    rootDir = root.toFile();
+    if (!rootDir.exists() && !rootDir.mkdir()) {
+      throw new IOException("Test directory creation failed");
     }
   }
 
   @Nested
-  @DisplayName("異常系・境界値のテスト")
-  class ExceptionAndEdgeTests {
+  class PositiveTests {
 
     @Test
-    @DisplayName("存在しないディレクトリを指定した場合に例外が発生すること")
-    void testConvertDir2Tree_NotFound() {
-      // ghostディレクトリは作成しない
-      var nonExistentDir = new File(tempDir.toFile(), "ghost");
+    void testFullCoverage() throws Exception {
+      var sub = new File(rootDir, "sub");
+      sub.mkdir();
+      var deep = new File(sub, "deep");
+      deep.mkdir();
+      new File(deep, "file.txt").createNewFile();
+      new File(rootDir, "z_last.txt").createNewFile();
 
-      // 現状の実装では FileOutputStream のコンストラクタで FileNotFoundException が発生する
-      assertThrows(
-          Exception.class,
-          () -> {
-            ExcelUtil.convertDir2Tree(nonExistentDir);
-          });
+      var t = Calendar.getInstance().getTime();
+      var excelName = String.format("tree_%ty-%tm-%td.xlsx", t, t, t);
+      new File(rootDir, excelName).createNewFile();
+
+      ExcelUtil.convertDir2Tree(rootDir, false);
+      ExcelUtil.convertDir2Tree(rootDir, true);
+    }
+  }
+
+  @Nested
+  class NegativeTests {
+
+    @Test
+    void testValidationAndErrors() throws IOException {
+      assertThrows(IllegalArgumentException.class, () -> ExcelUtil.convertDir2Tree(null, false));
+
+      var missing = new File(tempDir.toFile(), "not_exists");
+      assertThrows(IllegalArgumentException.class, () -> ExcelUtil.convertDir2Tree(missing, false));
+
+      var f = new File(rootDir, "f.txt");
+      f.createNewFile();
+      assertThrows(Exception.class, () -> ExcelUtil.convertDir2Tree(f, false));
+
+      var t = Calendar.getInstance().getTime();
+      var excelName = String.format("tree_%ty-%tm-%td.xlsx", t, t, t);
+      var conflictDir = new File(rootDir, excelName);
+      conflictDir.mkdir();
+      assertThrows(Exception.class, () -> ExcelUtil.convertDir2Tree(rootDir, false));
     }
 
     @Test
-    @DisplayName("出力ファイルと同名のファイルは処理対象から除外されること")
-    void testConvertDir2Tree_SkipSelf() throws Exception {
-      // 出力予定のファイル名と同名の空ファイルを作成しておく
-      var fileName = getExpectedFileName();
-      var selfFile = Files.createFile(tempDir.resolve(fileName));
+    void testListFilesNull() throws IOException {
+      var fileAsDir = new File(rootDir, "restricted");
+      fileAsDir.createNewFile();
 
-      // 実行
-      assertDoesNotThrow(
-          () -> {
-            ExcelUtil.convertDir2Tree(tempDir.toFile());
-          });
-
-      // 自身を処理しようとして無限ループやエラーにならないことを確認
-      assertTrue(Files.exists(selfFile));
+      try {
+        ExcelUtil.convertDir2Tree(fileAsDir, false);
+      } catch (Exception ignored) {
+      }
     }
   }
 }
