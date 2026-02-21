@@ -15,36 +15,22 @@ public class ExcelUtil {
 
   private static final Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
-  /**
-   * 処理ファイルと座標の情報を格納するレコード
-   *
-   * @param rows 自身の行
-   * @param cols 自身の列
-   * @param endRow 配下の最終行
-   * @param endCol 配下の最終列
-   * @param file 処理対象のファイル
-   */
+  /** 処理ファイルと座標の情報を格納するレコード */
   private record FileTreeDTO(int rows, int cols, int endRow, int endCol, File file) {}
 
-  /** 一覧の開始行 */
   private static final int ROW_START_INDEX = 1;
-
-  /** 一覧の開始列 */
   private static final int COL_START_INDEX = 1;
-
-  /** 出力するExcelファイル名のフォーマット */
   private static final String EXCEL_BOOK_NAME = "tree_%ty-%tm-%td.xlsx";
-
-  /** シート名 */
   private static final String EXCEL_SHEET_NAME = "tree";
 
   /**
    * 選択されたディレクトリを起点とし、配下の一覧を階層構造で描画する
    *
    * @param dir 起点ディレクトリ
+   * @param isDirectoryOnly ディレクトリのみ出力するかどうか
    * @throws Exception 例外発生時
    */
-  public static void convertDir2Tree(File dir) throws Exception {
+  public static void convertDir2Tree(File dir, boolean isDirectoryOnly) throws Exception {
     Optional.ofNullable(dir)
         .filter(file -> file.exists() || file.isDirectory())
         .orElseThrow(() -> new IllegalArgumentException("有効なディレクトリを指定してください。"));
@@ -56,7 +42,7 @@ public class ExcelUtil {
         var wb = new XSSFWorkbook()) {
       var ws = wb.createSheet(EXCEL_SHEET_NAME);
       var recordList = new ArrayList<FileTreeDTO>();
-      var ci = convert(dir, ROW_START_INDEX, COL_START_INDEX, name, recordList);
+      var ci = convert(dir, ROW_START_INDEX, COL_START_INDEX, name, recordList, isDirectoryOnly);
       setStyle(wb, ws, ci[1], recordList);
       wb.write(out);
 
@@ -162,29 +148,36 @@ public class ExcelUtil {
   }
 
   /**
-   * 起点となるファイル or ディレクトリから再帰的に配下のファイル情報を取得していく<br>
-   * ファイル名が出力するExcelファイル名と同名の場合は処理をスキップする<br>
-   * 処理対象がファイルの場合はリストに自身を追加し処理を戻す<br>
-   * 処理対象がディレクトリの場合は配下のファイル群を取得して再帰呼び出しする。最後にリストに自身を追加し処理を戻す
+   * 起点となるファイル or ディレクトリから再帰的に配下のファイル情報を取得していく
    *
    * @param file 処理対象ファイル or ディレクトリ
    * @param cnt 処理対象の行
    * @param indent 処理対象の階層
    * @param outputFileName 出力するExcelファイル名
    * @param recordList 描画するレコードのリスト
+   * @param isDirectoryOnly ディレクトリのみ出力するかどうか
    * @return {最終行、最終列}の形式で処理結果を返却する
    */
   private static int[] convert(
-      File file, int cnt, int indent, String outputFileName, List<FileTreeDTO> recordList) {
+      File file,
+      int cnt,
+      int indent,
+      String outputFileName,
+      List<FileTreeDTO> recordList,
+      boolean isDirectoryOnly) {
     var ci = new int[] {cnt, indent};
 
-    // 出力するExcelファイル名と同名の場合
     if (Objects.isNull(file) || outputFileName.equalsIgnoreCase(file.getName())) {
       ci[0] = cnt - 1;
       return ci;
     }
 
-    // 処理対象がファイルの場合
+    // ディレクトリのみモードかつ、現在の対象がファイルの場合はスキップ
+    if (isDirectoryOnly && file.isFile()) {
+      ci[0] = cnt - 1;
+      return ci;
+    }
+
     if (file.isFile()) {
       recordList.add(new FileTreeDTO(cnt, indent, cnt, indent, file));
       return ci;
@@ -196,17 +189,19 @@ public class ExcelUtil {
       return ci;
     }
 
-    Arrays.sort(
-        lists, Comparator.comparing(File::isDirectory).reversed().thenComparing(File::getName));
+    // リスト取得時にもフィルタリングを行う
+    var filteredLists =
+        Arrays.stream(lists)
+            .filter(f -> !isDirectoryOnly || f.isDirectory())
+            .sorted(Comparator.comparing(File::isDirectory).reversed().thenComparing(File::getName))
+            .toArray(File[]::new);
 
-    // 配下のファイル群を再帰呼び出しする
-    for (var tar : lists) {
-      var tmp = convert(tar, ci[0] + 1, indent + 1, outputFileName, recordList);
+    for (var tar : filteredLists) {
+      var tmp = convert(tar, ci[0] + 1, indent + 1, outputFileName, recordList, isDirectoryOnly);
       ci[0] = Math.max(ci[0], tmp[0]);
       ci[1] = Math.max(ci[1], tmp[1]);
     }
 
-    // 最後にリストに自身を追加する
     recordList.add(new FileTreeDTO(cnt, indent, ci[0], ci[1], file));
     return ci;
   }
