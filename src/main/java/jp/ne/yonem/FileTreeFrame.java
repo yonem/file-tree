@@ -5,11 +5,9 @@ import static jp.ne.yonem.util.ExcelUtil.convertDir2Tree;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import java.awt.*;
 import java.io.File;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Objects;
 import javax.swing.*;
 import jp.ne.yonem.components.SelectedFileTextField;
+import jp.ne.yonem.util.TextTreeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,8 +112,8 @@ public class FileTreeFrame extends JFrame {
       new SwingWorker<Void, Void>() {
 
         @Override
+        // onSubmit メソッド内の抜粋
         protected Void doInBackground() {
-
           try {
             btnSubmit.setEnabled(false);
             var rootDirectory = new File(path);
@@ -125,16 +123,15 @@ public class FileTreeFrame extends JFrame {
               convertDir2Tree(rootDirectory, chkDirectoryOnly.isSelected());
               JOptionPane.showMessageDialog(
                   null, SUCCESS_MESSAGE, SUCCESS_TITLE, JOptionPane.INFORMATION_MESSAGE);
-              taConsole.append(SUCCESS_MESSAGE);
-              taConsole.append("\n");
-              taConsole.append("End!!");
-              return null;
+              taConsole.append(SUCCESS_MESSAGE + "\nEnd!!");
+            } else {
+              // TextTreeUtil を使用
+              var treeText =
+                  TextTreeUtil.convertDir2Text(rootDirectory, chkDirectoryOnly.isSelected());
+              taConsole.setText(treeText);
             }
-            outputConsole(rootDirectory, 0, "", false);
-
           } catch (Exception e) {
             taConsole.setText(e.getMessage());
-
           } finally {
             btnSubmit.setEnabled(true);
           }
@@ -145,50 +142,6 @@ public class FileTreeFrame extends JFrame {
     } catch (Exception e) {
       JOptionPane.showMessageDialog(
           null, FAILURE_MESSAGE, FAILURE_TITLE, JOptionPane.ERROR_MESSAGE);
-    }
-  }
-
-  /**
-   * コンソールにディレクトリ構造を出力する
-   *
-   * @param file 対象ファイルまたはディレクトリ
-   * @param indent インデント深さ
-   * @param hierarchy 階層文字列
-   * @param isEOL 最終行フラグ
-   */
-  private void outputConsole(File file, int indent, String hierarchy, boolean isEOL) {
-
-    if (chkDirectoryOnly.isSelected() && file.isFile()) return;
-
-    if (0 == indent) {
-      taConsole.setText(null);
-      taConsole.append(file.getName());
-      taConsole.append("\n");
-      hierarchy += "   ";
-
-    } else {
-      taConsole.append(hierarchy);
-      taConsole.append(isEOL ? "└─ " : "├─ ");
-      taConsole.append(file.getName());
-      taConsole.append("\n");
-    }
-    if (file.isFile()) return;
-
-    var lists = file.listFiles();
-    if (Objects.isNull(lists)) return;
-
-    var filteredLists =
-        Arrays.stream(lists)
-            .filter(f -> !chkDirectoryOnly.isSelected() || f.isDirectory())
-            .sorted(Comparator.comparing(File::isDirectory).reversed().thenComparing(File::getName))
-            .toArray(File[]::new);
-
-    for (var i = 0; i < filteredLists.length; i++) {
-      var next = filteredLists[i];
-      var currentHierarchy = hierarchy;
-      if (i == 0 && 0 < indent) currentHierarchy += isEOL ? "   " : "│  ";
-      var isLast = i == filteredLists.length - 1;
-      outputConsole(next, indent + 1, currentHierarchy, isLast);
     }
   }
 }
