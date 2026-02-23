@@ -4,7 +4,13 @@ import static jp.ne.yonem.util.ExcelUtil.convertDir2Tree;
 
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetAdapter;
+import java.awt.dnd.DropTargetDropEvent;
 import java.io.File;
+import java.util.List;
 import javax.swing.*;
 import jp.ne.yonem.components.SelectedFileTextField;
 import jp.ne.yonem.util.TextTreeUtil;
@@ -94,6 +100,32 @@ public class FileTreeFrame extends JFrame {
       southPanel.add(btnSubmit);
       btnSubmit.addActionListener(e -> onSubmit());
       panel.add(southPanel, BorderLayout.SOUTH);
+
+      var dt =
+          new DropTarget(
+              this,
+              DnDConstants.ACTION_COPY,
+              new DropTargetAdapter() {
+                @Override
+                public void drop(DropTargetDropEvent event) {
+                  try {
+                    event.acceptDrop(DnDConstants.ACTION_COPY);
+                    var transferData =
+                        event.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+
+                    if (transferData instanceof List<?> files && !files.isEmpty()) {
+                      var file = (File) files.getFirst();
+                      txtRootDirectory.setText(file.getAbsolutePath());
+                    }
+                  } catch (Exception e) {
+                    logger.error("Drop failed", e);
+                  }
+                }
+              });
+      taConsole.setDropTarget(dt);
+      txtRootDirectory.setDropTarget(dt);
+      panel.setDropTarget(dt);
+
       setVisible(true);
 
     } catch (Exception e) {
