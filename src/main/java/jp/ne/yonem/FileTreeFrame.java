@@ -1,7 +1,5 @@
 package jp.ne.yonem;
 
-import static jp.ne.yonem.util.ExcelUtil.convertDir2Tree;
-
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
@@ -13,6 +11,7 @@ import java.io.File;
 import java.util.List;
 import javax.swing.*;
 import jp.ne.yonem.components.SelectedFileTextField;
+import jp.ne.yonem.util.ExcelUtil;
 import jp.ne.yonem.util.TextTreeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +65,9 @@ public class FileTreeFrame extends JFrame {
   /** 選択中フォルダ */
   private final JTextField txtRootDirectory = new SelectedFileTextField();
 
+  /** プログレスバー */
+  private final JProgressBar progressBar = new JProgressBar();
+
   /** デフォルトマージン */
   private final Insets defaultInsets = new Insets(10, 10, 10, 10);
 
@@ -91,9 +93,16 @@ public class FileTreeFrame extends JFrame {
       panel.add(northPanel, BorderLayout.NORTH);
 
       // CENTER
+      var centerPanel = new JPanel(new BorderLayout());
       taConsole.setEditable(false);
       taConsole.setMargin(defaultInsets);
-      panel.add(new JScrollPane(taConsole));
+      centerPanel.add(new JScrollPane(taConsole), BorderLayout.CENTER);
+
+      progressBar.setVisible(false);
+      progressBar.setStringPainted(true);
+      progressBar.setString("処理中...");
+      centerPanel.add(progressBar, BorderLayout.SOUTH);
+      panel.add(centerPanel, BorderLayout.CENTER);
 
       // SOUTH
       var southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -140,40 +149,54 @@ public class FileTreeFrame extends JFrame {
     var path = txtRootDirectory.getText();
     if (path.isEmpty()) return;
 
-    try {
-      new SwingWorker<Void, Void>() {
+    btnSubmit.setEnabled(false);
+    progressBar.setVisible(true);
+    progressBar.setIndeterminate(true);
 
-        @Override
-        // onSubmit メソッド内の抜粋
-        protected Void doInBackground() {
-          try {
-            btnSubmit.setEnabled(false);
-            var rootDirectory = new File(path);
+    new SwingWorker<String, Void>() {
 
-            if (chkExcel.isSelected()) {
-              taConsole.setText("Start!!\n");
-              convertDir2Tree(rootDirectory, chkDirectoryOnly.isSelected());
-              JOptionPane.showMessageDialog(
-                  null, SUCCESS_MESSAGE, SUCCESS_TITLE, JOptionPane.INFORMATION_MESSAGE);
-              taConsole.append(SUCCESS_MESSAGE + "\nEnd!!");
-            } else {
-              // TextTreeUtil を使用
-              var treeText =
-                  TextTreeUtil.convertDir2Text(rootDirectory, chkDirectoryOnly.isSelected());
-              taConsole.setText(treeText);
-            }
-          } catch (Exception e) {
-            taConsole.setText(e.getMessage());
-          } finally {
-            btnSubmit.setEnabled(true);
+      @Override
+      protected String doInBackground() throws Exception {
+        var rootDirectory = new File(path);
+
+        if (chkExcel.isSelected()) {
+          ExcelUtil.convertDir2Tree(rootDirectory, chkDirectoryOnly.isSelected());
+
+          if (Desktop.isDesktopSupported()) {
+            Desktop.getDesktop().open(rootDirectory);
           }
-          return null;
-        }
-      }.execute();
+          return SUCCESS_MESSAGE;
 
-    } catch (Exception e) {
-      JOptionPane.showMessageDialog(
-          null, FAILURE_MESSAGE, FAILURE_TITLE, JOptionPane.ERROR_MESSAGE);
-    }
+        } else {
+          return TextTreeUtil.convertDir2Text(rootDirectory, chkDirectoryOnly.isSelected());
+        }
+      }
+
+      @Override
+      protected void done() {
+        try {
+          var result = get();
+
+          if (chkExcel.isSelected()) {
+            taConsole.setText("Start!!\n");
+            taConsole.append(result + "\nEnd!!");
+            JOptionPane.showMessageDialog(
+                null, result, SUCCESS_TITLE, JOptionPane.INFORMATION_MESSAGE);
+
+          } else {
+            taConsole.setText(result);
+          }
+
+        } catch (Exception e) {
+          logger.error("処理失敗", e);
+          taConsole.setText("エラー: " + e.getMessage());
+
+        } finally {
+          btnSubmit.setEnabled(true);
+          progressBar.setVisible(false);
+          progressBar.setIndeterminate(false);
+        }
+      }
+    }.execute();
   }
 }
