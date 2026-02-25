@@ -3,12 +3,14 @@ package jp.ne.yonem;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetAdapter;
 import java.awt.dnd.DropTargetDropEvent;
 import java.io.File;
 import java.util.List;
+import java.util.Objects;
 import javax.swing.*;
 import jp.ne.yonem.components.SelectedFileTextField;
 import jp.ne.yonem.util.ExcelUtil;
@@ -68,6 +70,9 @@ public class FileTreeFrame extends JFrame {
   /** プログレスバー */
   private final JProgressBar progressBar = new JProgressBar();
 
+  /** コピーボタン */
+  private final JButton btnCopy = new JButton();
+
   /** デフォルトマージン */
   private final Insets defaultInsets = new Insets(10, 10, 10, 10);
 
@@ -96,7 +101,46 @@ public class FileTreeFrame extends JFrame {
       var centerPanel = new JPanel(new BorderLayout());
       taConsole.setEditable(false);
       taConsole.setMargin(defaultInsets);
-      centerPanel.add(new JScrollPane(taConsole), BorderLayout.CENTER);
+      var scrollPane = new JScrollPane(taConsole);
+
+      btnCopy.setText("📋");
+      btnCopy.setToolTipText("クリップボードにコピー");
+      btnCopy.setFocusable(false);
+      btnCopy.setCursor(new Cursor(Cursor.HAND_CURSOR));
+      btnCopy.addActionListener(e -> copyToClipboard());
+      btnCopy.putClientProperty("JButton.buttonType", "toolBarButton");
+
+      var layeredPane = new JLayeredPane();
+      layeredPane.setLayout(
+          new LayoutManager() {
+            @Override
+            public void addLayoutComponent(String name, Component comp) {}
+
+            @Override
+            public void removeLayoutComponent(Component comp) {}
+
+            @Override
+            public Dimension preferredLayoutSize(Container parent) {
+              return scrollPane.getPreferredSize();
+            }
+
+            @Override
+            public Dimension minimumLayoutSize(Container parent) {
+              return scrollPane.getMinimumSize();
+            }
+
+            @Override
+            public void layoutContainer(Container parent) {
+              scrollPane.setBounds(0, 0, parent.getWidth(), parent.getHeight());
+              int btnWidth = 40;
+              int btnHeight = 30;
+              btnCopy.setBounds(parent.getWidth() - btnWidth - 25, 10, btnWidth, btnHeight);
+            }
+          });
+
+      layeredPane.add(scrollPane, JLayeredPane.DEFAULT_LAYER);
+      layeredPane.add(btnCopy, JLayeredPane.PALETTE_LAYER);
+      centerPanel.add(layeredPane, BorderLayout.CENTER);
 
       progressBar.setVisible(false);
       progressBar.setStringPainted(true);
@@ -198,5 +242,29 @@ public class FileTreeFrame extends JFrame {
         }
       }
     }.execute();
+  }
+
+  private Timer copyTimer;
+
+  /** クリップボードへのコピー処理 */
+  private void copyToClipboard() {
+    var text = taConsole.getText();
+    if (Objects.isNull(text) || text.isEmpty()) return;
+
+    var selection = new StringSelection(text);
+    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+    if (Objects.nonNull(copyTimer) && copyTimer.isRunning()) copyTimer.stop();
+
+    btnCopy.setText("✅");
+
+    copyTimer =
+        new Timer(
+            1500,
+            e -> {
+              btnCopy.setText("📋");
+              copyTimer.stop();
+            });
+    copyTimer.setRepeats(false);
+    copyTimer.start();
   }
 }
