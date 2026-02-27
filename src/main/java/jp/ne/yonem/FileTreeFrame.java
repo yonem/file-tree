@@ -10,6 +10,10 @@ import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetAdapter;
 import java.awt.dnd.DropTargetDropEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -100,6 +104,25 @@ public class FileTreeFrame extends JFrame {
       northPanel.add(lblFile);
       comboRootDirectory.setEditable(true);
       comboRootDirectory.setPreferredSize(new Dimension(230, 25));
+      var editorComponent = comboRootDirectory.getEditor().getEditorComponent();
+
+      editorComponent.addMouseListener(
+          new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+              showFileChooser();
+            }
+          });
+
+      editorComponent.addKeyListener(
+          new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+              if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                showFileChooser();
+              }
+            }
+          });
       comboRootDirectory.addActionListener(
           e -> {
             if (!isUpdatingHistory && "comboBoxChanged".equals(e.getActionCommand())) {
@@ -107,6 +130,7 @@ public class FileTreeFrame extends JFrame {
               if (Objects.nonNull(item) && !item.toString().isEmpty()) onSubmit();
             }
           });
+
       loadHistory();
       northPanel.add(comboRootDirectory);
       northPanel.add(chkExcel);
@@ -338,6 +362,24 @@ public class FileTreeFrame extends JFrame {
 
     } finally {
       isUpdatingHistory = false;
+    }
+  }
+
+  /** ディレクトリ選択ダイアログを表示し、選択されたパスをコンボボックスにセットする */
+  private void showFileChooser() {
+    var currentPath = (String) comboRootDirectory.getEditor().getItem();
+    var chooser = new JFileChooser(currentPath);
+
+    chooser.setMultiSelectionEnabled(false);
+    chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+    chooser.setAcceptAllFileFilterUsed(false);
+
+    var selected = chooser.showOpenDialog(this);
+
+    if (selected == JFileChooser.APPROVE_OPTION) {
+      var path = chooser.getSelectedFile().getAbsolutePath();
+      comboRootDirectory.getEditor().setItem(path);
+      onSubmit();
     }
   }
 }
