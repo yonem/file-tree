@@ -1,7 +1,5 @@
 package jp.ne.yonem;
 
-import static java.util.prefs.Preferences.userNodeForPackage;
-
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
@@ -10,16 +8,11 @@ import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetAdapter;
 import java.awt.dnd.DropTargetDropEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.prefs.Preferences;
 import javax.swing.*;
+import jp.ne.yonem.components.HistoryPathComboBox;
 import jp.ne.yonem.util.ExcelUtil;
 import jp.ne.yonem.util.TextTreeUtil;
 import org.slf4j.Logger;
@@ -71,8 +64,8 @@ public class FileTreeFrame extends JFrame {
   /** ディレクトリのみ出力チェックボックス */
   private final JCheckBox chkDirectoryOnly = new JCheckBox("ディレクトリのみ", false);
 
-  /** 選択中フォルダ */
-  private final JComboBox<String> comboRootDirectory = new JComboBox<>();
+  /** 選択中フォルダコンボボックス */
+  private final HistoryPathComboBox comboRootDirectory = new HistoryPathComboBox();
 
   private static final String PREF_KEY_HISTORY = "path_history";
   private static final int MAX_HISTORY = 10;
@@ -102,36 +95,14 @@ public class FileTreeFrame extends JFrame {
       // NORTH
       var northPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
       northPanel.add(lblFile);
-      comboRootDirectory.setEditable(true);
-      comboRootDirectory.setPreferredSize(new Dimension(230, 25));
-      var editorComponent = comboRootDirectory.getEditor().getEditorComponent();
 
-      editorComponent.addMouseListener(
-          new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-              showFileChooser();
-            }
-          });
-
-      editorComponent.addKeyListener(
-          new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-              if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                showFileChooser();
-              }
-            }
-          });
       comboRootDirectory.addActionListener(
           e -> {
-            if (!isUpdatingHistory && "comboBoxChanged".equals(e.getActionCommand())) {
-              var item = comboRootDirectory.getSelectedItem();
-              if (Objects.nonNull(item) && !item.toString().isEmpty()) onSubmit();
+            if (!comboRootDirectory.isUpdating()
+                && "comboBoxChanged".equals(e.getActionCommand())) {
+              onSubmit();
             }
           });
-
-      loadHistory();
       northPanel.add(comboRootDirectory);
       northPanel.add(chkExcel);
       northPanel.add(chkDirectoryOnly);
@@ -217,6 +188,7 @@ public class FileTreeFrame extends JFrame {
               });
       taConsole.setDropTarget(dt);
       comboRootDirectory.setDropTarget(dt);
+      comboRootDirectory.getEditor().getEditorComponent().setDropTarget(dt);
       panel.setDropTarget(dt);
       setVisible(true);
 
@@ -229,7 +201,7 @@ public class FileTreeFrame extends JFrame {
 
   /** 出力ボタン押下時の処理 */
   private void onSubmit() {
-    var path = (String) comboRootDirectory.getEditor().getItem();
+    var path = comboRootDirectory.getSelectedPath();
     if (path.isEmpty()) return;
 
     btnSubmit.setEnabled(false);
@@ -269,7 +241,7 @@ public class FileTreeFrame extends JFrame {
           } else {
             taConsole.setText(result);
           }
-          saveHistory(path);
+          comboRootDirectory.saveHistory(path);
 
         } catch (Exception e) {
           logger.error("処理失敗", e);
@@ -306,80 +278,5 @@ public class FileTreeFrame extends JFrame {
             });
     copyTimer.setRepeats(false);
     copyTimer.start();
-  }
-
-  /** 履歴をPreferencesから読み込む */
-  private void loadHistory() {
-    isUpdatingHistory = true;
-
-    try {
-      var prefs = Preferences.userNodeForPackage(FileTreeFrame.class);
-      var historyRaw = prefs.get(PREF_KEY_HISTORY, "");
-
-      comboRootDirectory.removeAllItems();
-      if (!historyRaw.isEmpty()) {
-        for (var path : historyRaw.split(",")) {
-          comboRootDirectory.addItem(path);
-        }
-      }
-      comboRootDirectory.setSelectedIndex(-1);
-
-    } finally {
-      isUpdatingHistory = false;
-    }
-  }
-
-  private boolean isUpdatingHistory = false;
-
-  /** 成功したパスを履歴に保存する */
-  private void saveHistory(String newPath) {
-    if (newPath.isEmpty() || isUpdatingHistory) return;
-    isUpdatingHistory = true;
-
-    try {
-      var prefs = userNodeForPackage(FileTreeFrame.class);
-      var historyList = new ArrayList<String>();
-
-      for (int i = 0; i < comboRootDirectory.getItemCount(); i++) {
-        historyList.add(comboRootDirectory.getItemAt(i));
-      }
-      historyList.remove(newPath);
-      historyList.addFirst(newPath);
-
-      if (historyList.size() > MAX_HISTORY)
-        historyList = new ArrayList<>(historyList.subList(0, MAX_HISTORY));
-
-      comboRootDirectory.removeAllItems();
-      var sb = new StringBuilder();
-
-      for (var path : historyList) {
-        comboRootDirectory.addItem(path);
-        if (!sb.isEmpty()) sb.append(",");
-        sb.append(path);
-      }
-      prefs.put(PREF_KEY_HISTORY, sb.toString());
-      comboRootDirectory.setSelectedItem(newPath);
-
-    } finally {
-      isUpdatingHistory = false;
-    }
-  }
-
-  /** ディレクトリ選択ダイアログを表示し、選択されたパスをコンボボックスにセットする */
-  private void showFileChooser() {
-    var currentPath = (String) comboRootDirectory.getEditor().getItem();
-    var chooser = new JFileChooser(currentPath);
-
-    chooser.setMultiSelectionEnabled(false);
-    chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-    chooser.setAcceptAllFileFilterUsed(false);
-
-    var selected = chooser.showOpenDialog(this);
-
-    if (selected == JFileChooser.APPROVE_OPTION) {
-      var path = chooser.getSelectedFile().getAbsolutePath();
-      comboRootDirectory.getEditor().setItem(path);
-      onSubmit();
-    }
   }
 }
