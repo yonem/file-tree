@@ -67,9 +67,6 @@ public class FileTreeFrame extends JFrame {
   /** 選択中フォルダコンボボックス */
   private final HistoryPathComboBox comboRootDirectory = new HistoryPathComboBox();
 
-  private static final String PREF_KEY_HISTORY = "path_history";
-  private static final int MAX_HISTORY = 10;
-
   /** プログレスバー */
   private final JProgressBar progressBar = new JProgressBar();
 
