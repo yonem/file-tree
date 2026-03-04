@@ -74,7 +74,8 @@ public class FileTreeFrame extends JFrame {
 
     try {
       setTitle(APP_TITLE);
-      setResizable(false);
+      setResizable(true);
+      setMinimumSize(new Dimension(APP_WIDTH, APP_HEIGHT));
       setSize(APP_WIDTH, APP_HEIGHT);
       setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
       setLocationRelativeTo(null);
