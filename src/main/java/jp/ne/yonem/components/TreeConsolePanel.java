@@ -8,7 +8,22 @@ import javax.swing.text.*;
 
 public class TreeConsolePanel extends JPanel {
 
-  private final JTextPane consolePane = new JTextPane();
+  private final JTextPane consolePane =
+      new JTextPane() {
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+          return false;
+        }
+
+        @Override
+        public void setSize(Dimension d) {
+          if (d.width < getParent().getSize().width) {
+            d.width = getParent().getSize().width;
+          }
+          super.setSize(d);
+        }
+      };
   private final JButton btnCopy = new JButton("📋");
   private Timer copyTimer;
 
@@ -18,11 +33,13 @@ public class TreeConsolePanel extends JPanel {
     consolePane.setEditable(false);
     consolePane.setBackground(new Color(30, 30, 30));
     consolePane.setForeground(new Color(220, 220, 220));
-    consolePane.setFont(new Font("Monospaced", Font.PLAIN, 13));
+    consolePane.setFont(new Font("Consolas", Font.PLAIN, 12));
     consolePane.setMargin(insets);
 
     var scrollPane = new JScrollPane(consolePane);
     scrollPane.setBorder(BorderFactory.createEmptyBorder());
+    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
     btnCopy.setFocusable(false);
     btnCopy.setCursor(new Cursor(Cursor.HAND_CURSOR));
