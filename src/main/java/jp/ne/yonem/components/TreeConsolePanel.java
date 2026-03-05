@@ -35,6 +35,7 @@ public class TreeConsolePanel extends JPanel {
     consolePane.setForeground(new Color(220, 220, 220));
     consolePane.setFont(new Font("Consolas", Font.PLAIN, 12));
     consolePane.setMargin(insets);
+    consolePane.setEditorKit(new NoWrapEditorKit());
 
     var scrollPane = new JScrollPane(consolePane);
     scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -146,5 +147,54 @@ public class TreeConsolePanel extends JPanel {
             });
     copyTimer.setRepeats(false);
     copyTimer.start();
+  }
+
+  /** 自動改行を無効化するためのカスタムEditorKit */
+  static class NoWrapEditorKit extends StyledEditorKit {
+    @Override
+    public ViewFactory getViewFactory() {
+      return new NoWrapViewFactory();
+    }
+  }
+
+  static class NoWrapViewFactory implements ViewFactory {
+
+    @Override
+    public View create(Element elem) {
+      var kind = elem.getName();
+
+      if (Objects.nonNull(kind)) {
+
+        switch (kind) {
+          case AbstractDocument.ContentElementName -> {
+            return new LabelView(elem);
+          }
+          case AbstractDocument.ParagraphElementName -> {
+            return new ParagraphView(elem) {
+
+              @Override
+              public void layout(int width, int height) {
+                super.layout(Integer.MAX_VALUE, height);
+              }
+
+              @Override
+              public float getMinimumSpan(int axis) {
+                return super.getPreferredSpan(axis);
+              }
+            };
+          }
+          case AbstractDocument.SectionElementName -> {
+            return new BoxView(elem, View.Y_AXIS);
+          }
+          case StyleConstants.ComponentElementName -> {
+            return new ComponentView(elem);
+          }
+          case StyleConstants.IconElementName -> {
+            return new IconView(elem);
+          }
+        }
+      }
+      return new LabelView(elem);
+    }
   }
 }
