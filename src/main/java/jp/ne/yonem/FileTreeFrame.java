@@ -8,8 +8,12 @@ import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetAdapter;
 import java.awt.dnd.DropTargetDropEvent;
 import java.io.File;
+import java.nio.file.Files;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import jp.ne.yonem.components.HistoryPathComboBox;
 import jp.ne.yonem.components.TreeConsolePanel;
 import jp.ne.yonem.util.ExcelUtil;
@@ -51,8 +55,17 @@ public class FileTreeFrame extends JFrame {
   /** ルートディレクトリテキストボックスのラベル */
   private final JLabel lblFile = new JLabel("ルートディレクトリ");
 
+  /** タブ表示 */
+  private final JTabbedPane tabbedPane = new JTabbedPane();
+
   /** アプリケーションのコンソール */
   private final TreeConsolePanel consolePanel = new TreeConsolePanel(new Insets(10, 10, 10, 10));
+
+  /** 統計情報表示テーブル */
+  private final JTable statsTable = new JTable();
+
+  private final DefaultTableModel tableModel =
+      new DefaultTableModel(new Object[] {"拡張子", "ファイル数", "総行数(LOC)", "平均行数"}, 0);
 
   /** 実行ボタン */
   private final JButton btnSubmit = new JButton("出力");
@@ -101,7 +114,10 @@ public class FileTreeFrame extends JFrame {
 
       // CENTER
       var centerPanel = new JPanel(new BorderLayout());
-      centerPanel.add(consolePanel, BorderLayout.CENTER);
+      statsTable.setModel(tableModel);
+      tabbedPane.addTab("ツリー表示", consolePanel);
+      tabbedPane.addTab("拡張子統計", new JScrollPane(statsTable));
+      centerPanel.add(tabbedPane, BorderLayout.CENTER);
 
       progressBar.setVisible(false);
       progressBar.setStringPainted(true);
@@ -158,22 +174,63 @@ public class FileTreeFrame extends JFrame {
     progressBar.setVisible(true);
     progressBar.setIndeterminate(true);
 
-    new SwingWorker<String, Void>() {
+    record SearchResult(String treeText, List<ExtensionStat> stats) {}
+
+    new SwingWorker<SearchResult, Void>() {
 
       @Override
-      protected String doInBackground() throws Exception {
-        var rootDirectory = new File(path);
+      protected SearchResult doInBackground() throws Exception {
+        var root = new File(path);
+        var isDirOnly = chkDirectoryOnly.isSelected();
+        var treeText = "";
 
         if (chkExcel.isSelected()) {
-          ExcelUtil.convertDir2Tree(rootDirectory, chkDirectoryOnly.isSelected());
+          ExcelUtil.convertDir2Tree(root, isDirOnly);
+          treeText = SUCCESS_MESSAGE;
 
           if (Desktop.isDesktopSupported()) {
-            Desktop.getDesktop().open(rootDirectory);
+            Desktop.getDesktop().open(root);
           }
-          return SUCCESS_MESSAGE;
-
         } else {
-          return TextTreeUtil.convertDir2Text(rootDirectory, chkDirectoryOnly.isSelected());
+          treeText = TextTreeUtil.convertDir2Text(root, isDirOnly);
+        }
+
+        try (var stream = Files.walk(root.toPath())) {
+          var statsMap =
+              stream
+                  .filter(Files::isRegularFile)
+                  .collect(
+                      Collectors.groupingBy(
+                          p -> {
+                            var name = p.getFileName().toString();
+                            var dotIndex = name.lastIndexOf('.');
+                            return dotIndex == -1
+                                ? "(no extension)"
+                                : name.substring(dotIndex).toLowerCase();
+                          }));
+
+          var statsList =
+              statsMap.entrySet().stream()
+                  .map(
+                      entry -> {
+                        var totalLines =
+                            entry.getValue().stream()
+                                .mapToLong(
+                                    p -> {
+                                      try (var lines = Files.lines(p)) {
+                                        return lines.count();
+                                      } catch (Exception e) {
+                                        return 0;
+                                      }
+                                    })
+                                .sum();
+                        return new ExtensionStat(
+                            entry.getKey(), entry.getValue().size(), totalLines);
+                      })
+                  .sorted(Comparator.comparingLong(ExtensionStat::count).reversed())
+                  .toList();
+
+          return new SearchResult(treeText, statsList);
         }
       }
 
@@ -181,15 +238,21 @@ public class FileTreeFrame extends JFrame {
       protected void done() {
         try {
           var result = get();
+          consolePanel.setText(result.treeText());
+
+          tableModel.setRowCount(0);
+          result
+              .stats()
+              .forEach(
+                  s ->
+                      tableModel.addRow(
+                          new Object[] {
+                            s.extension(), s.count(), s.totalLines(), s.getAverageLines()
+                          }));
 
           if (chkExcel.isSelected()) {
-            consolePanel.setText("Start!!\n");
-            consolePanel.append(result + "\nEnd!!");
             JOptionPane.showMessageDialog(
-                null, result, SUCCESS_TITLE, JOptionPane.INFORMATION_MESSAGE);
-
-          } else {
-            consolePanel.setText(result);
+                null, result.treeText(), SUCCESS_TITLE, JOptionPane.INFORMATION_MESSAGE);
           }
           comboRootDirectory.saveHistory(path);
 
@@ -204,5 +267,24 @@ public class FileTreeFrame extends JFrame {
         }
       }
     }.execute();
+  }
+
+  /**
+   * 拡張子ごとの統計情報
+   *
+   * @param extension 拡張子名
+   * @param count ファイル数
+   * @param totalLines 総行数
+   */
+  public record ExtensionStat(String extension, long count, long totalLines) {
+
+    /**
+     * 平均行数を取得する
+     *
+     * @return 平均行数
+     */
+    public long getAverageLines() {
+      return count == 0 ? 0 : totalLines / count;
+    }
   }
 }
