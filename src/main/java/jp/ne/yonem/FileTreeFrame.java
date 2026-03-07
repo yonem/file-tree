@@ -13,7 +13,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
+import jp.ne.yonem.components.ExtensionStatTable;
 import jp.ne.yonem.components.HistoryPathComboBox;
 import jp.ne.yonem.components.TreeConsolePanel;
 import jp.ne.yonem.util.ExcelUtil;
@@ -62,10 +62,7 @@ public class FileTreeFrame extends JFrame {
   private final TreeConsolePanel consolePanel = new TreeConsolePanel(new Insets(10, 10, 10, 10));
 
   /** 統計情報表示テーブル */
-  private final JTable statsTable = new JTable();
-
-  private final DefaultTableModel tableModel =
-      new DefaultTableModel(new Object[] {"拡張子", "ファイル数", "総行数(LOC)", "平均行数"}, 0);
+  private final ExtensionStatTable statsTable = new ExtensionStatTable();
 
   /** 実行ボタン */
   private final JButton btnSubmit = new JButton("出力");
@@ -114,9 +111,8 @@ public class FileTreeFrame extends JFrame {
 
       // CENTER
       var centerPanel = new JPanel(new BorderLayout());
-      statsTable.setModel(tableModel);
       tabbedPane.addTab("ツリー表示", consolePanel);
-      tabbedPane.addTab("拡張子統計", new JScrollPane(statsTable));
+      tabbedPane.addTab("拡張子統計", statsTable);
       centerPanel.add(tabbedPane, BorderLayout.CENTER);
 
       progressBar.setVisible(false);
@@ -239,16 +235,7 @@ public class FileTreeFrame extends JFrame {
         try {
           var result = get();
           consolePanel.setText(result.treeText());
-
-          tableModel.setRowCount(0);
-          result
-              .stats()
-              .forEach(
-                  s ->
-                      tableModel.addRow(
-                          new Object[] {
-                            s.extension(), s.count(), s.totalLines(), s.getAverageLines()
-                          }));
+          statsTable.updateStats(result.stats());
 
           if (chkExcel.isSelected()) {
             JOptionPane.showMessageDialog(
