@@ -8,14 +8,12 @@ import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetAdapter;
 import java.awt.dnd.DropTargetDropEvent;
 import java.io.File;
-import java.nio.file.Files;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.swing.*;
 import jp.ne.yonem.components.ExtensionStatTable;
 import jp.ne.yonem.components.HistoryPathComboBox;
 import jp.ne.yonem.components.TreeConsolePanel;
+import jp.ne.yonem.service.StatisticsService;
 import jp.ne.yonem.util.ExcelUtil;
 import jp.ne.yonem.util.TextTreeUtil;
 import org.slf4j.Logger;
@@ -190,44 +188,9 @@ public class FileTreeFrame extends JFrame {
         } else {
           treeText = TextTreeUtil.convertDir2Text(root, isDirOnly);
         }
-
-        try (var stream = Files.walk(root.toPath())) {
-          var statsMap =
-              stream
-                  .filter(Files::isRegularFile)
-                  .collect(
-                      Collectors.groupingBy(
-                          p -> {
-                            var name = p.getFileName().toString();
-                            var dotIndex = name.lastIndexOf('.');
-                            return dotIndex == -1
-                                ? "(no extension)"
-                                : name.substring(dotIndex).toLowerCase();
-                          }));
-
-          var statsList =
-              statsMap.entrySet().stream()
-                  .map(
-                      entry -> {
-                        var totalLines =
-                            entry.getValue().stream()
-                                .mapToLong(
-                                    p -> {
-                                      try (var lines = Files.lines(p)) {
-                                        return lines.count();
-                                      } catch (Exception e) {
-                                        return 0;
-                                      }
-                                    })
-                                .sum();
-                        return new ExtensionStat(
-                            entry.getKey(), entry.getValue().size(), totalLines);
-                      })
-                  .sorted(Comparator.comparingLong(ExtensionStat::count).reversed())
-                  .toList();
-
-          return new SearchResult(treeText, statsList);
-        }
+        var statsService = new StatisticsService();
+        var statsList = statsService.execute(root);
+        return new SearchResult(treeText, statsList);
       }
 
       @Override
