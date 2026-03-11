@@ -32,7 +32,7 @@ public class ExcelUtil {
    */
   public static void convertDir2Tree(File dir, boolean isDirectoryOnly) throws Exception {
     Optional.ofNullable(dir)
-        .filter(file -> file.exists() || file.isDirectory())
+        .filter(File::isDirectory)
         .orElseThrow(() -> new IllegalArgumentException("有効なディレクトリを指定してください。"));
 
     var t = Calendar.getInstance().getTime();
@@ -96,33 +96,26 @@ public class ExcelUtil {
       var col = row.createCell(rec.cols());
       col.setCellValue(rec.file().getName());
 
-      // 自身が最小列の場合
       if (maxIndent == rec.cols()) {
         col.setCellStyle(fileFullStyle);
         continue;
       }
 
       if (rec.file().isDirectory()) {
-
-        // 自身がディレクトリの場合
         col.setCellStyle(dirLeftTopStyle);
-        if (rec.rows() == rec.endRow()) col.setCellStyle(fileLeftStyle); // ディレクトリが最終行
+        if (rec.rows() == rec.endRow()) col.setCellStyle(fileLeftStyle);
 
-        // 列方向への罫線を描画していく
         for (var i = rec.cols() + 1; i < maxIndent; i++) {
           row.createCell(i).setCellStyle(dirTopStyle);
-          if (rec.rows() == rec.endRow())
-            row.createCell(i).setCellStyle(fileTopBottomStyle); // ディレクトリが最終行
+          if (rec.rows() == rec.endRow()) row.createCell(i).setCellStyle(fileTopBottomStyle);
         }
         row.createCell(maxIndent).setCellStyle(dirTopRightStyle);
 
-        // ディレクトリが最終行
         if (rec.rows() == rec.endRow()) {
           row.createCell(maxIndent).setCellStyle(fileRightStyle);
           continue;
         }
 
-        // 行方向への罫線を描画していく
         for (var i = rec.rows() + 1; i < rec.endRow(); i++) {
           var currRow = ws.getRow(i);
           if (Objects.isNull(currRow)) currRow = ws.createRow(i);
@@ -133,18 +126,15 @@ public class ExcelUtil {
         currRow.createCell(rec.cols()).setCellStyle(dirLeftBottomStyle);
 
       } else {
-
-        // 自身がファイルの場合
         col.setCellStyle(fileLeftStyle);
 
-        // 列方向への罫線を描画していく
         for (var i = rec.cols() + 1; i < maxIndent; i++) {
           row.createCell(i).setCellStyle(fileTopBottomStyle);
         }
         row.createCell(maxIndent).setCellStyle(fileRightStyle);
       }
     }
-    ws.autoSizeColumn(maxIndent, true); // 最終列の列幅を自動調整する
+    ws.autoSizeColumn(maxIndent, true);
   }
 
   /**
@@ -167,13 +157,7 @@ public class ExcelUtil {
       boolean isDirectoryOnly) {
     var ci = new int[] {cnt, indent};
 
-    if (Objects.isNull(file) || outputFileName.equalsIgnoreCase(file.getName())) {
-      ci[0] = cnt - 1;
-      return ci;
-    }
-
-    // ディレクトリのみモードかつ、現在の対象がファイルの場合はスキップ
-    if (isDirectoryOnly && file.isFile()) {
+    if (outputFileName.equalsIgnoreCase(file.getName())) {
       ci[0] = cnt - 1;
       return ci;
     }
@@ -183,15 +167,8 @@ public class ExcelUtil {
       return ci;
     }
 
-    var lists = file.listFiles();
-    if (Objects.isNull(lists)) {
-      recordList.add(new FileTreeDTO(cnt, indent, cnt, indent, file));
-      return ci;
-    }
-
-    // リスト取得時にもフィルタリングを行う
     var filteredLists =
-        Arrays.stream(lists)
+        Arrays.stream(Optional.ofNullable(file.listFiles()).orElse(new File[0]))
             .filter(f -> !isDirectoryOnly || f.isDirectory())
             .sorted(Comparator.comparing(File::isDirectory).reversed().thenComparing(File::getName))
             .toArray(File[]::new);
