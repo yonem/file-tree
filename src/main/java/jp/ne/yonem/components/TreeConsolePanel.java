@@ -2,6 +2,7 @@ package jp.ne.yonem.components;
 
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.awt.dnd.DropTarget;
 import java.util.Objects;
 import javax.swing.*;
 import javax.swing.text.*;
@@ -127,7 +128,7 @@ public class TreeConsolePanel extends JPanel {
   }
 
   @Override
-  public void setDropTarget(java.awt.dnd.DropTarget dt) {
+  public void setDropTarget(DropTarget dt) {
     consolePane.setDropTarget(dt);
   }
 
