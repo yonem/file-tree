@@ -1,32 +1,80 @@
+# FileTree
+
+[![Maven test](https://github.com/yonem/file-tree/actions/workflows/maven.yml/badge.svg?branch=develop)](https://github.com/yonem/file-tree/actions/workflows/maven.yml)
+
+選択したディレクトリを、見やすいツリー表示・Excel・拡張子別統計へ変換するJavaデスクトップアプリケーションです。ソース構成の把握、ファイル棚卸し、ディレクトリ構造の共有を素早く行えます。
+
+## 主な機能
+
+- ディレクトリ構造をツリー形式で画面へ表示
+- ディレクトリだけを抽出して表示
+- Excel形式のツリーを選択したディレクトリ直下へ出力
+- 拡張子ごとのファイル数・総行数・平均行数を集計
+- パス履歴、ドラッグ＆ドロップ、結果のコピー
+
+## 画面イメージ
+
+![FileTreeの初期画面](img/application-screen.png)
+
+## 出力イメージ
+
+Excel出力の例は[こちら](img/output_image.png)です。
+
 ## 動作環境
 
-- Java21で動作
+- Java 21
+- Maven Wrapper 3.9.6（Maven本体の事前インストールは不要）
 
-2023/9/29現在  
-https://www.oracle.com/java/technologies/downloads/#java21
+## 起動方法
 
-### 使用ライブラリ
+### Windows
 
-- Apache POI
+```text
+.\mvnw.cmd -B -ntp clean package
+java -jar target\file-tree-1.0.0.jar
+```
 
-Excel2007形式（ooxml）でExcel関連の処理を行う。
+### macOS / Linux
 
-```xml
-
-<dependency>
-    <groupId>org.apache.poi</groupId>
-    <artifactId>poi-ooxml</artifactId>
-    <version>5.2.3</version>
-</dependency>
+```text
+./mvnw -B -ntp clean package
+java -jar target/file-tree-1.0.0.jar
 ```
 
 ## 操作方法
 
-1. 起動時にディレクトリ選択のダイアログを表示
-2. ツリーの起点となるディレクトリを選択する
-3. 選択したディレクトリの直下に収集結果が出力される
+1. 起動後、ルートディレクトリ欄をクリックして対象フォルダを選択する
+2. 必要に応じて`Excel`または`ディレクトリのみ`を選択する
+3. `出力`をクリックする
+4. ツリー表示・拡張子統計を確認する。Excel出力時は対象ディレクトリ直下にファイルを作成する
 
-![出力イメージ](img/output_image.png)
+## テストとCI
+
+```text
+.\mvnw.cmd -B -ntp clean test
+```
+
+macOS/Linuxでは`./mvnw -B -ntp clean test`を実行します。テストは6クラス・30件で、ツリー表示、Excel出力、統計、UI部品の正常系・異常系を確認します。詳細な実行結果は`target/surefire-reports`に出力されます。
+
+GitHub Actionsでは、`develop`へのpushとpull requestを対象に、Java 21（Temurin）・Maven Wrapper・仮想ディスプレイ（Xvfb）で同じテストを実行します。
+
+## 技術構成
+
+| 分類 | 使用技術 |
+| --- | --- |
+| 言語・実行環境 | Java 21 |
+| UI | Swing、FlatLaf |
+| ビルド | Maven、Maven Wrapper |
+| Excel出力 | Apache POI 5.5.1 |
+| ログ | SLF4J、Logback |
+| テスト | JUnit Jupiter、Mockito |
+| CI | GitHub Actions |
+
+## 制約事項
+
+- 大規模なディレクトリでは、ファイル数や総行数の集計に時間がかかる場合があります。
+- アクセス権がないファイルや読み取りに失敗したファイルは、集計結果から除外または行数0として扱います。
+- Excel出力は対象ディレクトリへ書き込みます。
 
 ---
 
