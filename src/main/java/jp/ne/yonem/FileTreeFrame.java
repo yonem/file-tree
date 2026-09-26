@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 /** メインクラス */
 public class FileTreeFrame extends JFrame {
 
-  private static final Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+  private static final Logger logger = LoggerFactory.getLogger(FileTreeFrame.class);
 
   public static void main(String[] args) {
     FlatMacDarkLaf.setup();
@@ -207,8 +207,14 @@ public class FileTreeFrame extends JFrame {
           comboRootDirectory.saveHistory(path);
 
         } catch (Exception e) {
-          logger.error("処理失敗", e);
-          consolePanel.setText("エラー: " + e.getMessage());
+          var cause = e.getCause() == null ? e : e.getCause();
+          logger.error(
+              "Directory processing failed. root={}, excel={}, directoryOnly={}",
+              path,
+              chkExcel.isSelected(),
+              chkDirectoryOnly.isSelected(),
+              cause);
+          consolePanel.setText(FAILURE_MESSAGE);
 
         } finally {
           btnSubmit.setEnabled(true);

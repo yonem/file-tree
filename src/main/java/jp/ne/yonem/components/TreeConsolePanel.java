@@ -6,8 +6,12 @@ import java.awt.dnd.DropTarget;
 import java.util.Objects;
 import javax.swing.*;
 import javax.swing.text.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TreeConsolePanel extends JPanel {
+
+  private static final Logger logger = LoggerFactory.getLogger(TreeConsolePanel.class);
 
   private final JTextPane consolePane =
       new JTextPane() {
@@ -119,7 +123,7 @@ public class TreeConsolePanel extends JPanel {
       }
 
     } catch (BadLocationException e) {
-      e.printStackTrace();
+      logger.warn("Failed to append tree text to the console", e);
     }
   }
 
