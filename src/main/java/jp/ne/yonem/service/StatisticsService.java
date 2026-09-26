@@ -36,8 +36,8 @@ public class StatisticsService {
       }
       statsList.sort(Comparator.comparingLong(ExtensionStat::count).reversed());
 
-    } catch (Exception e) {
-      logger.warn("統計情報の取得中にエラーが発生しました", e);
+    } catch (IOException | SecurityException | UncheckedIOException e) {
+      logger.warn("Statistics collection failed. root={}", root, e);
       return List.of();
     }
     return statsList;
@@ -58,7 +58,7 @@ public class StatisticsService {
       return lines.count();
 
     } catch (UncheckedIOException | IOException e) {
-      logger.warn("行数取得に失敗したためスキップします: {}", p);
+      logger.warn("Line count failed; using zero lines. path={}", p, e);
       return 0L;
     }
   }
@@ -85,6 +85,7 @@ public class StatisticsService {
       }
 
     } catch (IOException e) {
+      logger.debug("Binary detection failed; treating file as binary. path={}", p, e);
       return true;
     }
     return false;
