@@ -139,8 +139,15 @@ public class TreeConsolePanel extends JPanel {
   private void copyToClipboard() {
     var text = getText();
     if (Objects.isNull(text) || text.isEmpty()) return;
-    var selection = new StringSelection(text);
-    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+
+    try {
+      var selection = new StringSelection(text);
+      Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+    } catch (IllegalStateException e) {
+      logger.warn("System clipboard is unavailable; tree text was not copied", e);
+      return;
+    }
+
     if (Objects.nonNull(copyTimer) && copyTimer.isRunning()) copyTimer.stop();
     btnCopy.setText("✅");
     copyTimer =
