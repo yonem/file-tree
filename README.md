@@ -51,12 +51,21 @@ java -jar target/file-tree-1.0.0.jar
 ## テストとCI
 
 ```text
-.\mvnw.cmd -B -ntp clean test
+.\mvnw.cmd -B -ntp clean verify
 ```
 
-macOS/Linuxでは`./mvnw -B -ntp clean test`を実行します。テストは6クラス・30件で、ツリー表示、Excel出力、統計、UI部品の正常系・異常系を確認します。詳細な実行結果は`target/surefire-reports`に出力されます。
+macOS/Linuxでは`./mvnw -B -ntp clean verify`を実行します。テストはツリー表示、Excel出力、統計、UI部品の正常系・異常系を確認します。詳細な実行結果は`target/surefire-reports`に出力されます。
 
-GitHub Actionsでは、`develop`へのpushとpull requestを対象に、Java 21（Temurin）・Maven Wrapper・仮想ディスプレイ（Xvfb）で同じテストを実行します。
+`verify`の完了後、HTML・XML・CSV形式のカバレッジレポートを`target/site/jacoco/`へ出力します。HTMLレポートは`target/site/jacoco/index.html`で確認できます。
+
+GitHub Actionsでは、`develop`へのpushとpull requestを対象に、Java 21（Temurin）・Maven Wrapper・仮想ディスプレイ（Xvfb）で同じテストとカバレッジレポート生成を実行します。
+
+### リモートCIの確認方法
+
+1. README先頭の`Maven test`バッジを選択し、ワークフロー実行履歴を開く
+2. 対象の実行結果から各ステップのログを確認する
+3. 成功・失敗にかかわらず、実行結果のArtifactsから`coverage-report`をダウンロードする
+4. 展開後の`index.html`を開き、パッケージ・クラス・行ごとのカバレッジを確認する
 
 ## 技術構成
 
